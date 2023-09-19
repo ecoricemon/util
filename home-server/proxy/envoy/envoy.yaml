@@ -1,0 +1,23 @@
+node:
+  cluster: envoy_cluster
+  id: envoy_id
+admin:
+  address:
+    socket_address:
+      address: 127.0.0.1
+      port_value: 9901
+layered_runtime:
+  layers:
+  - name: layer0
+    static_layer:
+      overload:
+        global_downstream_max_connections: 1024
+dynamic_resources:
+  lds_config:
+    path_config_source:
+      path: /etc/envoy/lds/cur.yaml
+    resource_api_version: V3
+  cds_config:
+    path_config_source:
+      path: /etc/envoy/cds/cur.yaml
+    resource_api_version: V3

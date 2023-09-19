@@ -1,0 +1,14 @@
+- "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster
+  name: $domain
+  connect_timeout: 30s 
+  type: STATIC
+  lb_policy: ROUND_ROBIN
+  load_assignment:
+    cluster_name: $domain
+    endpoints:
+    - lb_endpoints:
+      - endpoint:
+          address:
+            socket_address:
+              address: 000.000.000.000      << Your IP address here
+              port_value: $port

@@ -1,0 +1,34 @@
+version: "3"
+volumes:
+  nextcloud:
+  db:
+services:
+  app:
+    container_name: cloud-nextcloud
+    image: nextcloud
+    restart: always
+    ports:
+    - 12080:80
+    links:
+    - db
+    volumes:
+    - ./nextcloud:/var/www/html
+    environment:
+    - MYSQL_USER=????????           << Your new DB user's ID
+    - MYSQL_PASSWORD=?????          << Your new DB user's PW
+    - MYSQL_DATABASE=nextcloud
+    - MYSQL_HOST=db
+    depends_on:
+    - db
+  db:
+    container_name: cloud-mariadb
+    image: mariadb:11.1.2-jammy
+    restart: always
+    command: --transaction-isolation=READ-COMMITTED --log-bin=binlog --binlog-format=ROW
+    volumes:
+    - ./mariadb:/var/lib/mysql
+    environment:
+    - MARIADB_USER=???????          << Your new DB user's ID
+    - MARIADB_PASSWORD=??????       << Your new DB user's PW
+    - MARIADB_DATABASE=nextcloud
+    - MARIADB_ROOT_PASSWORD=????    << DB root's PW

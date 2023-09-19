@@ -1,0 +1,23 @@
+version: '3.6'
+services:
+  git:
+    container_name: git-gitlab
+    image: 'gitlab/gitlab-ce:16.3.4-ce.0'
+    restart: always
+    hostname: 'my-id.router-ddns.com'   << Fix it
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url 'https://my-id.router-ddns.com/git/'    << Fix it
+        nginx['listen_port'] = 80
+        nginx['listen_https'] = false
+        letsencrypt['enable'] = false
+        gitlab_rails['gitlab_shell_ssh_port'] = 11022
+    ports:
+      - '11080:80'
+      - '11443:443'
+      - '11022:22'
+    volumes:
+      - './gitlab/config:/etc/gitlab'
+      - './gitlab/logs:/var/log/gitlab'
+      - './gitlab/data:/var/opt/gitlab'
+    shm_size: '256m'
