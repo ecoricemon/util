@@ -1,4 +1,4 @@
             - match:
-                prefix: $prefix
+                prefix: /$prefix
               route:
                 cluster: $domain

@@ -3,14 +3,16 @@
 echo "### Connecting a service to envoy! ###"
 echo ""
 read -p "What's service's name you want to connect? (ex. git) " name
-read -p "What port number does it use? (ex. 12345) " port
+read -p "What port number does it use? (ex. 11080) " port
 read -p "What path you want to use? (ex. git) " path
-echo "You can access https://IP-address/$path or https://my-id.route-ddns.com/$path after this procedure"
+read -p "Do you need prefix_rewrite? (y/n) " prefix_rewrite
+echo "You can access https://IP-address/$path or https://my-id.router.ddns.com/$path after this procedure"
 echo ""
 
 echo "Service name: $name"
 echo "Port: $port"
 echo "Path: $path"
+echo "Prefix rewrite: $prefix_rewrite"
 read -p "Are you OK to proceed? (y/n) " go
 echo ""
 
@@ -46,14 +48,31 @@ if [ "$go" = "y" ]; then
   echo ""
 
   echo "Appending..."
+
+  # === CDS ===
   c_num=$(find ./envoy/cds/clusters -type f | wc -l)
   c_fname=$(printf "%02d-cluster.yaml" $c_num)
   sed "s/\$domain/$name/; s/\$port/$port/" \
     ./envoy/cds/cluster-template.yaml > ./envoy/cds/clusters/$c_fname
+
+  # === LDS ===
   h_num=$(find ./envoy/lds/hosts -type f | wc -l)
   h_fname=$(printf "%02d-host.yaml" $h_num)
-  sed "s/\$domain/$name/; s#\$prefix#"/$path"#" \
+
+  # match /prefix/ 
+  sed "s/\$domain/$name/; s#\$prefix#"$path/"#" \
     ./envoy/lds/host-template.yaml > ./envoy/lds/hosts/$h_fname
+  if [ $prefix_rewrite = "y" ]; then
+    echo '                prefix_rewrite: "/"' >> ./envoy/lds/hosts/$h_fname
+  fi
+
+  # match /prefix
+  sed "s/\$domain/$name/; s#\$prefix#"$path"#" \
+    ./envoy/lds/host-template.yaml >> ./envoy/lds/hosts/$h_fname
+  if [ $prefix_rewrite = "y" ]; then
+    echo '                prefix_rewrite: "/"' >> ./envoy/lds/hosts/$h_fname
+  fi
+
   echo "Done"
   echo ""
 
