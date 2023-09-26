@@ -1,0 +1,8 @@
+          - name: $domain
+            domains:
+            - $external
+            routes:
+            - match:
+                prefix: "/"
+              route:
+                cluster: $domain

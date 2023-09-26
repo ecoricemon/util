@@ -1,34 +1,40 @@
-version: "3"
-volumes:
-  nextcloud:
-  db:
+# Please make cloud directory first if this fails
+
+version: '3.7'
+
+networks:
+  home-server:
+    external: true
+
 services:
-  app:
-    container_name: cloud-nextcloud
-    image: nextcloud
+  hs-cloud:
+    container_name: hs-cloud
+    image: pydio/cells:4.2
     restart: always
-    ports:
-    - 12080:80
-    links:
-    - db
-    volumes:
-    - ./nextcloud:/var/www/html
     environment:
-    - MYSQL_USER=????????           << Your new DB user's ID
-    - MYSQL_PASSWORD=?????          << Your new DB user's PW
-    - MYSQL_DATABASE=nextcloud
-    - MYSQL_HOST=db
-    depends_on:
-    - db
-  db:
-    container_name: cloud-mariadb
-    image: mariadb:11.1.2-jammy
+      CELLS_SITE_NO_TLS: 1
+      CELLS_SITE_EXTERNAL: https://your.domain.name.for.cloud
+      CELLS_INSTALL_YAML: /pydio/config/install.yaml
+    ports: 
+    - your.port.number.0007:8080
+    networks:
+    - home-server
+    volumes:
+    - ./install-conf.yaml:/pydio/config/install.yaml:ro
+    - /mnt/hdd/cloud/cells:/var/cells
+
+  hs-cloud-db:
+    container_name: hs-cloud-db
+    image: mysql:8
     restart: always
-    command: --transaction-isolation=READ-COMMITTED --log-bin=binlog --binlog-format=ROW
-    volumes:
-    - ./mariadb:/var/lib/mysql
     environment:
-    - MARIADB_USER=???????          << Your new DB user's ID
-    - MARIADB_PASSWORD=??????       << Your new DB user's PW
-    - MARIADB_DATABASE=nextcloud
-    - MARIADB_ROOT_PASSWORD=????    << DB root's PW
+      MYSQL_ROOT_PASSWORD: your-PW
+      MYSQL_DATABASE: cells
+      MYSQL_USER: pydio
+      MYSQL_PASSWORD: your-PW
+    command: [mysqld, --character-set-server=utf8mb4, --collation-server=utf8mb4_unicode_ci]
+    networks:
+    - home-server
+    volumes:
+    - /mnt/hdd/cloud/mysql:/var/lib/mysql
+

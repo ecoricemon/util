@@ -2,11 +2,11 @@
 subjectAltName = @alt_names
 
 [ var ]
-net = 000.000.000           << LAN IP without last 3 digits, ex. 123.123.123
+net = your.IP.subnet
 
 [ alt_names ]
-DNS.1 = your.domain         << ex. DNS.1 = my-id.router-ddns.com
-DNS.2 = *.your.domain
+DNS.1 = your.domain.name
+DNS.2 = *.your.domain.name
 IP.1 = $var::net.2
 IP.2 = $var::net.3
 IP.3 = $var::net.4

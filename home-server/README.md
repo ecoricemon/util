@@ -1,53 +1,88 @@
-## Envoy
+# Home server  
 
-1. Make cert by using enveloped cert.ext  
+Structure  
+Reverse proxy -- Git server  
+              -- Cloud storage  
+
+Utilities: Video converting script  
+
+## proxy  
+
+Reverse proxy server  
+
+### How to set certificates
+1. Make cert by using enveloped cert.ext.  
 1. Copy cert.key and cert.crt to envoy/certs/
-1. Follow auto-kube's content, but use enveloped files instead
-> Please check files out carefully  
-1. Run docker compose  
-- at proxy dir  
+1. Follow auto-kube's content, but use enveloped files instead.
+1. Run docker compose.  
+
+## git  
+
+Git server  
+
+### How to login as 'root' user
+1. See 'volume/config/initial_root_password'.  
+1. Put that password in the login screen.  
+1. Please don't forget to change your password.  
+
+## cloud  
+
+Cloud storage server  
+
+Nothing to comment now.  
+
+## Utilities  
+
+### videocvt  
+
+Video converting script  
+
+This converts videos into WebM.  
+It uses ffmpeg and chooses VP9 and Opus as video and audio codesc respectively.
+All configurations are pre-defined in the script and referring to 
+[Recommended Settings for VOD](https://developers.google.com/media/vp9/settings/vod/)
+
+
+#### How to use it  
+
+You need to prepare folder structure like:  
+somewhere/ 
+|_ src/  
+|_ convert.py  
+
+Then put your video files into 'src/' directory and run convert.py  
+It reads 'src/' and trys to convert video files within it recursively.  
+And it generates folders and files converted in the same structure.  
+
+### pack.sh  
+
+This substitutes some secret contents into other strings.  
+And then it generates 'targets.tar' to share it with people.  
+Finally, it recovers the secrets.
+
+#### How to use it  
 ```sh
-docker compose up -d
+./pack.sh keys subs
 ```
 
-## Nextcloud  
+#### keys  
 
-1. Run docker compose  
-- at cloud dir  
+Definition of secret contents  
+See an example below.  
 ```sh
-docker compose up -d
+my.server.domain
+id
+password
 ```
 
-1. Append it to the envoy proxy  
-- at proxy dir  
+#### subs  
+
+Definition of substitutions
+See an example below.  
 ```sh
-./gen.sh
-name: anything you want (I'm gonna use 'temp' here)
-port: 12080
-path: anything you want (I'm gonna use 'temp' here)
+xxx.yyy.zzz
+guess-me
+guess-me2
 ```
 
-1. Add prefix_rewrite rule on the proxy site  
-- proxy's envoy/lds/cur.yaml & envoy/lds/hosts/??-host.yaml  
-```yaml
-- match:
-    prefix: /temp
-  route:
-    cluster: temp
-    prefix_rewrite: "/" # I think nextcloud can't handle additional path, so remove it here
-```
-
-1. Add white list and overwrite rule on the cloud site  
-- cloud's nextcloud/config/config.php  
-```php
-'trusted_domains' =>
- array (
-   0 => '000.000.000.000',          // Proxy IP
-   1 => 'my-id.router-ddns.com',    // Proxy domain name
- ),
- 'trusted_proxies' => ['000.000.000.000'],  // Proxy IP
- 'overwritewebroot' => '/temp',            // The path you put when you were running proxy's gen.sh
-                                            // This will be included when redirected, so proxy can pass it to the cloud
- 'overwriteprotocol' => 'https',            // Proxy is using https, right?
-```
 

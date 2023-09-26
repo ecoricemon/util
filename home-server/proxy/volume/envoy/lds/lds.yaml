@@ -3,7 +3,7 @@ resources:
   address:
     socket_address:
       address: 0.0.0.0
-      port_value: 10000
+      port_value: your.port.number.0002
   filter_chains:
   - transport_socket:
       name: envoy.transport_sockets.tls
@@ -26,7 +26,19 @@ resources:
             "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
         route_config:
           virtual_hosts:
-          - name: index
+          - name: git
             domains:
-            - "*"
+            - your.domain.name.for.git
             routes:
+            - match:
+                prefix: "/"
+              route:
+                cluster: git
+          - name: cloud
+            domains:
+            - your.domain.name.for.cloud
+            routes:
+            - match:
+                prefix: "/"
+              route:
+                cluster: cloud

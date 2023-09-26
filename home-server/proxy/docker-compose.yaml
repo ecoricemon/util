@@ -1,17 +1,23 @@
 version: "3"
+
+networks:
+  home-server:
+    external: true
+
 services:
-  proxy:
-    container_name: proxy-envoy
+  hs-proxy:
+    container_name: hs-proxy
     image: envoyproxy/envoy:v1.27.0
     restart: always
     ports:
-    - 10001:9901
-    - 443:10000
+    - your.port.number.0003:your.port.number.0001
+    - 443:your.port.number.0002
+    networks:
+    - home-server
     volumes:
-    - ./envoy:/etc/envoy
-    #dns:
-    #- {{ hostvars['dns0']['ansible_host'] }}
+    - ./volume/envoy:/etc/envoy
     command:
     - envoy
     - -c /etc/envoy/envoy.yaml
     - -l info
+

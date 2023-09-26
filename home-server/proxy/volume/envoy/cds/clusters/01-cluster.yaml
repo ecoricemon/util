@@ -1,0 +1,14 @@
+- "@type": type.googleapis.com/envoy.config.cluster.v3.Cluster
+  name: git
+  connect_timeout: 60s 
+  type: STATIC
+  lb_policy: ROUND_ROBIN
+  load_assignment:
+    cluster_name: git
+    endpoints:
+    - lb_endpoints:
+      - endpoint:
+          address:
+            socket_address:
+              address: your.IP.addr
+              port_value: your.port.number.0005
