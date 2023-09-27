@@ -22,7 +22,7 @@ def get_codec_option() -> list[str]:
     return ["-c:v", "libvpx-vp9", "-c:a", "libopus"]
 
 # Returns resolution option like -vf scale=1920x1080
-def get_resolution_option(frame_height: int) -> [str]:
+def get_resolution_option(frame_height: int) -> list[str]:
     if frame_height <= 240:
         res = "320x240"
     elif frame_height <= 360:
@@ -172,7 +172,7 @@ def gather_path(src_root: str, dest_root: str) -> tuple[list[str], list[str]]:
     return (inputs, outputs)
 
 # Converting job
-def convert(input: str, output: str, total: int, converted, lock) -> int:
+def convert(input: str, output: str, total: int, converted, lock, log_file) -> int:
     ret1, height = get_frame_height(input)
     ret2, rate = get_frame_rate(input)
     if ret1 != 0 or ret2 != 0:
@@ -184,10 +184,12 @@ def convert(input: str, output: str, total: int, converted, lock) -> int:
         ret = subprocess.run(cmd, stdout=subprocess.PIPE, text=True)
         if ret.returncode != 0:
             log("error", "Failed. " + " ".join(cmd))
-            return ret
+            return ret.returncode
     with lock:
         converted.value += 1
         log("info", f"Done: {converted.value} / {total}")
+        with open(log_file.value, 'a') as f:
+            f.write(output + "\n")
     return 0
 
 if __name__ == "__main__":
@@ -196,11 +198,21 @@ if __name__ == "__main__":
 
     with Manager() as manager:
         converted = manager.Value('i', 0)
+        log_file = manager.Value('c', "outputs.txt")
+        f = open(log_file.value, 'w')
+        f.close()
         lock = manager.Lock()
-        args = [(inputs[i], outputs[i], n, converted, lock) for i in range(n)]
-        nproc = int(os.cpu_count() / 2)
+        args = [(inputs[i], outputs[i], n, converted, lock, log_file) for i in range(n)]
+        nproc = 1
+        if cpus := os.cpu_count():
+            nproc = math.ceil(cpus * 0.8)
+            log("info", f"{cpus} CPUs detected. {nproc} processes will run")
+        else:
+            log("warn", "Couldn't detect CPU count. Only one process will run")
 
         with Pool(nproc) as pool:
             ret = pool.starmap(convert, args)
-            if any(v != 0 for v in ret):
-                exit(ret)
+            for v in ret:
+                if v != 0:
+                    exit(v)
+
