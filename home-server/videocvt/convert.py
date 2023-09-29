@@ -1,6 +1,8 @@
 # ref: https://developers.google.com/media/vp9/settings/vod/
 
 import os
+import unicodedata
+import argparse
 import math
 import subprocess
 from multiprocessing import Pool, Manager
@@ -124,7 +126,10 @@ def get_frame_height(input_path: str) -> tuple[int, int]:
     res = subprocess.run(cmd, stdout=subprocess.PIPE, text=True)
     if res.returncode != 0:
         return (res.returncode, 0)
-    height = int(res.stdout)
+    try:
+        height = int(res.stdout)
+    except ValueError:
+        return (1, 0)
     return (res.returncode, height)
 
 # Returns frame rate of the video file
@@ -134,6 +139,8 @@ def get_frame_rate(input_path: str) -> tuple[int, float]:
     if res.returncode != 0:
         return (res.returncode, 0.0)
     f = res.stdout.split("/")
+    if len(f) != 2:
+        return (1, 0.0)
     return (res.returncode, int(f[0]) / int(f[1]))
 
 # Returns ffmpeg command to convert from something to webm
@@ -165,10 +172,10 @@ def gather_path(src_root: str, dest_root: str) -> tuple[list[str], list[str]]:
             if len(file) == 0 or file[0] == '.':
                 continue
             ext = os.path.splitext(file)[1]
-            if ext.lower() == ".webm":
-                continue
-            inputs.append(src_path + "/" + file)
-            outputs.append(dest_path + "/" + file[:-len(ext)] + ".webm")
+            input = src_path + "/" + file
+            output = dest_path + "/" + file[:-len(ext)] + ".webm"
+            inputs.append(unicodedata.normalize("NFC", input))
+            outputs.append(unicodedata.normalize("NFC", output))
     return (inputs, outputs)
 
 # Converting job
@@ -176,8 +183,18 @@ def convert(input: str, output: str, total: int, converted, lock, log_file) -> i
     ret1, height = get_frame_height(input)
     ret2, rate = get_frame_rate(input)
     if ret1 != 0 or ret2 != 0:
-        log("info", "Not a video file, skip")
+        converted.value += 1
+        log("info", f"Not a video file, skip: {converted.value} / {total}")
         return 0
+    with lock:
+        with open(log_file.value, 'r') as f:
+            lines = f.readlines()
+            for line in lines:
+                if output == line.rstrip():
+                    converted.value += 1
+                    log("info", f"Found conversion log, skip: {converted.value} / {total}")
+                    return 0
+
     for _pass in [1, 2]:
         cmd = get_convert_command(input, output, height, math.ceil(rate), _pass)
         log("info", "[Command]: " + " ".join(cmd))
@@ -185,6 +202,7 @@ def convert(input: str, output: str, total: int, converted, lock, log_file) -> i
         if ret.returncode != 0:
             log("error", "Failed. " + " ".join(cmd))
             return ret.returncode
+
     with lock:
         converted.value += 1
         log("info", f"Done: {converted.value} / {total}")
@@ -197,19 +215,33 @@ if __name__ == "__main__":
     n = len(inputs)
 
     with Manager() as manager:
-        converted = manager.Value('i', 0)
-        log_file = manager.Value('c', "outputs.txt")
-        f = open(log_file.value, 'w')
-        f.close()
-        lock = manager.Lock()
-        args = [(inputs[i], outputs[i], n, converted, lock, log_file) for i in range(n)]
+        parser = argparse.ArgumentParser(description="Video Converter")
+        parser.add_argument("--per", help="Percentage of CPU utilization (1 ~ 100)")
+        user_args = parser.parse_args()
+
+        try:
+            cpu_per = int(user_args.per)
+        except TypeError:
+            cpu_per = 80
+        except ValueError:
+            print("Invalid --cpu option")
+            exit(1)
+        if not 1 <= cpu_per <= 100:
+            print(f"--per {cpu_per} is not in (1 ~ 100)")
+            exit(1)
+
         nproc = 1
         if cpus := os.cpu_count():
-            nproc = math.ceil(cpus * 0.8)
+            nproc = math.floor(cpus * (cpu_per * 0.01) + 0.5)
+            nproc = max(nproc, 1)
             log("info", f"{cpus} CPUs detected. {nproc} processes will run")
         else:
             log("warn", "Couldn't detect CPU count. Only one process will run")
 
+        converted = manager.Value('i', 0)
+        log_file = manager.Value('c', "outputs.txt")
+        lock = manager.Lock()
+        args = [(inputs[i], outputs[i], n, converted, lock, log_file) for i in range(n)]
         with Pool(nproc) as pool:
             ret = pool.starmap(convert, args)
             for v in ret:
