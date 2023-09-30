@@ -5,7 +5,7 @@ import unicodedata
 import argparse
 import math
 import subprocess
-from multiprocessing import Pool, Manager
+from multiprocessing import Process, Manager, Queue
 from datetime import datetime
 
 def log(level: str, msg: str):
@@ -178,15 +178,27 @@ def gather_path(src_root: str, dest_root: str) -> tuple[list[str], list[str]]:
             outputs.append(unicodedata.normalize("NFC", output))
     return (inputs, outputs)
 
+# Converting loop
+def convert(queue, total: int, converted, lock, log_file) -> int:
+    while True:
+        with lock:
+            if queue.empty():
+                return 0
+            input, output = queue.get()
+        ret = _convert(input, output, total, converted, lock, log_file)
+        if ret != 0:
+            log("error", f"Failed to convert {input}")
+            return ret
+
 # Converting job
-def convert(input: str, output: str, total: int, converted, lock, log_file) -> int:
+def _convert(input: str, output: str, total: int, converted, lock, log_file) -> int:
     ret1, height = get_frame_height(input)
     ret2, rate = get_frame_rate(input)
-    if ret1 != 0 or ret2 != 0:
-        converted.value += 1
-        log("info", f"Not a video file, skip: {converted.value} / {total}")
-        return 0
     with lock:
+        if ret1 != 0 or ret2 != 0:
+            converted.value += 1
+            log("info", f"Not a video file, skip: {converted.value} / {total}")
+            return 0
         with open(log_file.value, 'r') as f:
             lines = f.readlines()
             for line in lines:
@@ -241,10 +253,17 @@ if __name__ == "__main__":
         converted = manager.Value('i', 0)
         log_file = manager.Value('c', "outputs.txt")
         lock = manager.Lock()
-        args = [(inputs[i], outputs[i], n, converted, lock, log_file) for i in range(n)]
-        with Pool(nproc) as pool:
-            ret = pool.starmap(convert, args)
-            for v in ret:
-                if v != 0:
-                    exit(v)
+        queue = Queue()
+        for i in range(n):
+            queue.put((inputs[i], outputs[i]))
+        args = (queue, n, converted, lock, log_file) 
+        
+        processes = []
+        for i in range(nproc):
+            process = Process(target=convert, args=args)
+            process.start()
+            processes.append(process)
+
+        for process in processes:
+            process.join()
 
