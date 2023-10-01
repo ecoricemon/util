@@ -8,11 +8,19 @@ vim.opt.tabstop = 2
 vim.opt.relativenumber = true
 vim.opt.whichwrap = "b,s,<,>,[,]"
 
+-- Enable hovering diagnostic message
+-- ref: https://stackoverflow.com/questions/69290794/nvim-lsp-change-lspconfig-diagnostic-message-location
+vim.diagnostic.config({
+  virtual_text = false
+})
+vim.o.updatetime = 250
+vim.cmd [[autocmd CursorHold,CursorHoldI * lua vim.diagnostic.open_float(nil, {focus=false})]]
+
 -- general
 lvim.log.level = "info"
 lvim.format_on_save = {
   enabled = true,
-  pattern = "*.lua,*.rs",
+  pattern = "*.lua",
   timeout = 1000,
 }
 -- to disable icons and use a minimalist setup, uncomment the following
