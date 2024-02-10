@@ -14,12 +14,16 @@ else
     exit 1
 fi
 
+# Make directories for cloud
+mkdir -p /mnt/hdd/cloud
+
 # Run
 docker compose -f ./network/docker-compose.yaml $cmd 2> /dev/null
-docker compose -f ./db/docker-compose.yaml $cmd
+docker compose -f ./proxy/docker-compose.yaml $cmd
 docker compose -f ./git/docker-compose.yaml $cmd
-docker compose -f ./dav/docker-compose.yaml $cmd
+docker compose -f ./cloud/docker-compose.yaml $cmd
 
 # Clean
 docker compose -f ./network/docker-compose.yaml $cmd 2> /dev/null
 docker container rm hs-dummy 1> /dev/null 2> /dev/null
+

@@ -1,0 +1,11 @@
+version: "3"
+
+services:
+  db-init:
+    container_name: db-init
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: <PW>
+    volumes:
+    - ./init:/docker-entrypoint-initdb.d
+    - ./mysql:/var/lib/mysql

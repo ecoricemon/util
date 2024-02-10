@@ -1,0 +1,29 @@
+version: "3"
+
+networks:
+  home-server:
+    external: true
+
+services:
+  hs-dav:
+    container_name: hs-dav
+    image: drakkan/sftpgo:v2.5.6
+    restart: always
+    environment:
+      SFTPGO_WEBDAVD__BINDINGS__0__PORT: <WEBDAV PORT>
+      SFTPGO_DATA_PROVIDER__DRIVER: mysql
+      SFTPGO_DATA_PROVIDER__NAME: sftpgo
+      SFTPGO_DATA_PROVIDER__HOST: hs-db
+      SFTPGO_DATA_PROVIDER__PORT: 3306
+      SFTPGO_DATA_PROVIDER__USERNAME: <ID>
+      SFTPGO_DATA_PROVIDER__PASSWORD: <PW>
+    networks:
+    - home-server
+    volumes:
+    - ./data:/srv/sftpgo
+    - ./home:/var/lib/sftpgo
+    - <ADDITIONAL PATH>
+    ports:
+    - <PORT>:8080 # Web admin
+    - <PORT>:2022 # SFTP
+    - <PORT>:<WEBDAV PORT> # WebDAV
