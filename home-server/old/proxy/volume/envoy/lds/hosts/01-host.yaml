@@ -1,8 +1,0 @@
-          - name: git
-            domains:
-            - your.domain.name.for.git
-            routes:
-            - match:
-                prefix: "/"
-              route:
-                cluster: git

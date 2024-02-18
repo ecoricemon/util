@@ -1,8 +1,0 @@
-          - name: cloud
-            domains:
-            - your.domain.name.for.cloud
-            routes:
-            - match:
-                prefix: "/"
-              route:
-                cluster: cloud
