@@ -8,9 +8,6 @@ return {
   config = function()
     require("flutter-tools").setup({
       lsp = {
-        color = {
-          enabled = true, -- Shows color squares for Colors.blue etc.
-        },
         settings = {
           showTodos = true,
           completeFunctionCalls = true,
@@ -19,6 +16,13 @@ return {
         },
       },
       widget_guides = { enabled = true }, -- The vertical lines in your UI code
+    })
+
+    -- On Neovim 0.12+, use the built-in LSP document color support instead
+    vim.api.nvim_create_autocmd("LspAttach", {
+      callback = function(ev)
+        vim.lsp.document_color.enable(true, { bufnr = ev.buf })
+      end,
     })
   end,
 }
