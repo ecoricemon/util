@@ -22,3 +22,7 @@ vim.opt.relativenumber = false
 
 -- Send yanked text directly to OS clipboard
 vim.opt.clipboard = "unnamedplus"
+
+-- Disable modeline(vim settings by comments)
+vim.opt.modeline = false
+vim.opt.modelines = 0

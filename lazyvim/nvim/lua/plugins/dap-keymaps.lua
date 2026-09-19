@@ -1,6 +1,13 @@
 return {
   {
     "mfussenegger/nvim-dap",
+    dependencies = {
+      -- DAP UI
+      "rcarriga/nvim-dap-ui",
+      "nvim-neotest/nvim-nio",
+      -- Mason-DAP connection
+      "jay-babu/mason-nvim-dap.nvim",
+    },
     keys = {
       { "<F5>", function() require("dap").continue() end, desc = "Debug: Start/Continue" },
       { "<S-F5>", function() require("dap").terminate() end, desc = "Debug: Stop" },
@@ -14,6 +21,14 @@ return {
     "rcarriga/nvim-dap-ui",
     keys = {
       { "<F6>", function() require("dapui").toggle() end, desc = "Debug: Toggle UI" },
+    },
+  },
+  {
+    "jay-babu/mason-nvim-dap.nvim",
+    dependencies = { "mason-org/mason.nvim" },
+    opts = {
+      ensure_installed = { "codelldb" },
+      handlers = {},
     },
   },
 }
